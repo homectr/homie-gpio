@@ -16,7 +16,7 @@ Specifies gpios to be monitored (read) and controlled (write).
 > Monitored gpios are automatically pulled-up upon device boot, so monitored contact should ground them. 
 > This also means that 1/true => open contact, 0/false => closed contact
 
-> Controlled gpios will get 3.3V when witched to ON.
+> Controlled gpios will get 3.3V when switched to ON.
 
 ```
 {
