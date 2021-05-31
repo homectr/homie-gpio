@@ -13,7 +13,11 @@ There are two configuration files required to be present on device SPIFFS:
 
 ### settings.json
 Specifies gpios to be monitored (read) and controlled (write).
-> Monitored gpios are automatically pulled-up upon device boot.
+> Monitored gpios are automatically pulled-up upon device boot, so monitored contact should ground them. 
+> This also means that 1/true => open contact, 0/false => closed contact
+
+> Controlled gpios will get 3.3V when witched to ON.
+
 ```
 {
     "settings": {
@@ -29,7 +33,5 @@ Specifies gpios to be monitored (read) and controlled (write).
 Both file can be uploaded directly from Platformio.
 1. store files to project folder `data/homie`
 1. run file storage upload `pio run -t uploadfs`
-
-## Hardware
 
 
