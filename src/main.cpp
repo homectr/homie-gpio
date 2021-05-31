@@ -15,7 +15,7 @@ const char* optsOFF = "closed CLOSED off OFF 0";
 String opts = String(optsON) + " " + String(optsOFF);
 unsigned char negativeOpts = strlen(optsON)+1; // start of negative options
 
-HomieNode node("gpiomon", "GPIO monitor","gpiomon");  // node for manipulating gpios
+HomieNode node("gpio", "GPIO","gpio");  // node for manipulating gpios
 
 bool configLoaded = false;
 
@@ -23,12 +23,37 @@ void onGpioChange(const char* gpioStr, int statusOld, int statusNew){
     DEBUG_PRINT("[gpioChanged] id=%s\n",gpioStr);
     // update Homie property
     if (Homie.isConnected()) node.setProperty(gpioStr).send(statusNew?"1":"0");
-    Homie.getLogger() << millis() << " Gpio " << gpioStr << " " << statusOld << " -> " << statusNew << endl;
+    Homie.getLogger() << millis() << " GPIO " << gpioStr << " " << statusOld << " -> " << statusNew << endl;
 }
 
 bool updateHandler(const HomieNode &node, const HomieRange &range, const String &property, const String &value){
-    DEBUG_PRINT("[updateHandler] node=%s pro=%s value=%s\n",node.getId(), property.c_str(), value.c_str());
-    return true;
+    DEBUG_PRINT("[updateHandler node=%s prop=%s val=%s\n",node.getId(),property.c_str(), value.c_str());
+    if (strcmp(node.getId(),"gpio") != 0) return false;
+    bool v = value == "true";
+    GPIOListItem *i = GPIOS;
+    while (i){
+        if (property == i->gpio->gpioStr) { 
+            i->gpio->set(v);
+            Homie.getLogger() << millis() << " GPIO " << property.c_str() << " set to " << v << endl;
+            return true;
+        }
+        i = i->next;
+    }
+
+    return false;
+}
+
+void onHomieEvent(const HomieEvent& event) {
+  switch(event.type) {
+    case HomieEventType::SENDING_STATISTICS:
+      // Do whatever you want when statistics are sent in normal mode
+      GPIOListItem *i = GPIOS;
+        while (i) {
+            i->gpio->publishStatus();
+            i = i->next;
+        }
+      break;
+  }
 }
 
 void setup() {
@@ -39,6 +64,7 @@ void setup() {
 
     Homie_setFirmware("Homie GPIO controller", "1.0.0");
     Homie.setGlobalInputHandler(updateHandler);
+    Homie.onEvent(onHomieEvent);
     Homie.setup();
 }
 
@@ -58,20 +84,23 @@ void loop() {
     GPIOListItem *i = GPIOS;
     while (i){
         i->gpio->loop();
+        i=i->next;
     }
 
     if (!configLoaded && Homie.isConfigured()){
-        loadConfig(GPIOS);
+        loadConfig(&GPIOS);
+        CONSOLE("%lu config loaded\n",millis());
         configLoaded = true;
         GPIOListItem *i = GPIOS;
+        CONSOLE("%lu gpios:\n",millis());
         while (i) {
-            HomieInternals::PropertyInterface prop = node.advertise(i->gpio->gpioStr).setName(i->gpio->gpioStr).setDatatype("integer");
+            DEBUG_PRINT("gpios adr=%X gpioadr=%X nextadr=%X\n",i, i->gpio, i->next);
+            HomieInternals::PropertyInterface prop = node.advertise(i->gpio->gpioStr).setName(i->gpio->gpioStr).setDatatype("boolean");
             if (i->gpio->settable){
                 prop.settable();
             } else {
                 i->gpio->setOnChangeCB(onGpioChange);
             }
-
             i->gpio->printConfig();
             i = i->next;
         }

@@ -3,17 +3,19 @@
 #include <stdio.h>
 #include <string.h>
 
-//#define NODEBUG_PRINT
+#define NODEBUG_PRINT
 #include "debug_print.h"
 
 #define BOUNCE_INTERVAL 50
 
-GPIO::GPIO(unsigned char gpio, unsigned char settable){
+GPIO::GPIO(unsigned char gpio, unsigned char mode){
     this->gpio = gpio;
-    this->settable = settable;
+    this->settable = mode == OUTPUT;
     char buf[25];
-    snprintf(buf,25,"gpio%d",gpio);
+    snprintf(buf,25,"%d",gpio);
     gpioStr = strdup(buf);
+    pinMode(gpio,mode);
+    status = settable ? 0 : digitalRead(gpio); // force change
 }
 
 void GPIO::loop(){
@@ -27,5 +29,15 @@ void GPIO::loop(){
 }
 
 void GPIO::printConfig(){
-    CONSOLE("GPIO gpio=%d settable=%d status=%s\n",gpio,settable,status);
+    CONSOLE("GPIO id=%s gpio=%d settable=%d status=%d\n",gpioStr, gpio, settable, status);
+}
+
+void GPIO::publishStatus(){
+    if (onChange) onChange(gpioStr, status, status);
+}
+
+void GPIO::set(unsigned char value){
+    if (!settable) return;
+    digitalWrite(gpio,value);
+    DEBUG_PRINT("GPIO %s changed to %d\n",gpioStr,value);
 }

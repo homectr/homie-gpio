@@ -5,4 +5,4 @@
 #define LOCAL_CONFIG_FILE   "/homie/settings.json"
 
 int initFS();
-int loadConfig(GPIOListItem* glist);
+int loadConfig(GPIOListItem** glist);

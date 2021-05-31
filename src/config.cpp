@@ -44,7 +44,7 @@ int initFS(){
  *     }
  * }
  */
-int loadConfig(GPIOListItem* glist) {
+int loadConfig(GPIOListItem** glist) {
     const char *module = "[init:ldcfg]";
     DynamicJsonDocument jdoc(2048);
 
@@ -68,31 +68,32 @@ int loadConfig(GPIOListItem* glist) {
     JsonVariant jv;
     JsonArray ja;
     JsonObject jroot = jdoc[F("settings")];
-    unsigned int i = 0;
 
     CONSOLE_PGM(PSTR("%s Reading monitored gpios\n"), module);
     ja = jroot[F("monitor")].as<JsonArray>();
     for(JsonVariant v : ja) {
-        CONSOLE_PGM(PSTR("%s   gpio %d "), module, i);
         unsigned int gn = v | 0;
+        DEBUG_PRINT("%s   #%d", module, gn);
         if (gn) {
             GPIOListItem *g = new GPIOListItem();
-            g->gpio = new GPIO(gn,false);
-            g->next = glist;
-            glist = g;
+            g->gpio = new GPIO(gn,INPUT_PULLUP);
+            DEBUG_PRINT(" item=%X gpio=%X\n",g, g->gpio);
+            g->next = *glist;
+            *glist = g;
         }
     }
 
-    CONSOLE_PGM(PSTR("%s Reading settable gpios\n"), module);
-    ja = jroot[F("set")].as<JsonArray>();
+    CONSOLE_PGM(PSTR("%s Reading controlled gpios\n"), module);
+    ja = jroot[F("control")].as<JsonArray>();
     for(JsonVariant v : ja) {
-        CONSOLE_PGM(PSTR("%s   gpio %d "), module, i);
         unsigned int gn = v | 0;
+        DEBUG_PRINT("%s   #%d", module, gn);
         if (gn) {
             GPIOListItem *g = new GPIOListItem();
-            g->gpio = new GPIO(gn,true);
-            g->next = glist;
-            glist = g;
+            g->gpio = new GPIO(gn,OUTPUT);
+            DEBUG_PRINT(" item=%X gpio=%X\n",g, g->gpio);
+            g->next = *glist;
+            *glist = g;
         }
     }    
     

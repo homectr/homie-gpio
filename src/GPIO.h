@@ -16,7 +16,9 @@ class GPIO {
         void loop();
         void printConfig();
         // set callback for gpio change
-        void setOnChangeCB(gpio_cb_t cb){onChange = cb;};        
+        void setOnChangeCB(gpio_cb_t cb){onChange = cb;};
+        void publishStatus();
+        void set(unsigned char value);
 };
 
 struct GPIOListItem {
